@@ -25,19 +25,20 @@ El script debe ejecutarse desde la carpeta de binarios del proyecto:
 
 ### **Comando de ejecución**
 ```bash
-sh -x load_shape.sh [Param1] [Param2] [Param3]
+sh -x load_shape.sh [Param1] [Param2] [Param3] [Param4]
 ```
 ---
 
 ## 🛠️ Definición de Parámetros
 
-El script requiere ***3 parámetros obligatorios** para su correcto funcionamiento:
+El script requiere ***4 parámetros obligatorios** para su correcto funcionamiento:
 
 | Parámetro | Variable | Definición | Ejemplo |
 | :--- | :--- | :--- | :--- |
 | **Param1** | ` $1 ` | **Nombre de Tabla:** Nombre que recibirá la tabla en la base de datos. | ` ec_ecu_cnt_prf_glp ` |
 | **Param2** | ` $2 ` | **Nombre del Archivo:** Nombre del archivo fuente (sin la extensión .shp). | ` EcdCnt_Prf ` |
 | **Param3** | ` $3 ` | **SRID:** Código del Sistema de Referencia Espacial (4326 o 32717). | ` 32717 ` |
+| **Param4** | ` $4 ` | **Subdirectorio Fuente:** Nombre del subdirectorio en fnt/ donde se encuentra el archivo. | ` INEC2012/EcdCntSmpGlp ` |
 
 ---
 
@@ -47,7 +48,7 @@ El flujo de datos depende de una estructura de directorios estandarizada basada 
 ### 1. Ruta de Fuentes (Input)
 * **Directorio Raíz:** ` $VAL_RUTA ` → /home/dcuasapaz/git/dbeaver/data_ingestion/postgis_dpa
 * **Directorio de Fuentes:** ` $VAL_RUTA `/fnt/
-* **Patrón de búsqueda dinámico:** ` $VAL_RUTA `/fnt/XXXXXXXX/$2.shp
+* **Patrón de búsqueda dinámico:** ` $VAL_RUTA `/fnt/$4/$2.shp
 
 &nbsp;&nbsp;&nbsp;&nbsp; **Nota:** El segmento XXXXXXXX representa el subdirectorio específico de la fuente de datos (ej. DPA, INEC, etc.).
 
@@ -62,7 +63,7 @@ El flujo de datos depende de una estructura de directorios estandarizada basada 
 Para cargar los cantones de Ecuador usando coordenadas proyectadas (UTM 17S):
 
 ```bash
-sh -x load_shape.sh ec_ecu_cnt_prf_glp EcdCnt_Prf 32717
+sh -x load_shape.sh ec_ecu_cnt_prf_glp EcdCnt_Prf 32717 INEC2012/EcdCntSmpGlp
 ```
 
 ---

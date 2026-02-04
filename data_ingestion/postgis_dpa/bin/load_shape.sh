@@ -3,6 +3,7 @@
 # MODIFICACIONES:														            #
 # FECHA  		AUTOR     		DESCRIPCION MOTIVO						            #
 # 2026-02-04	Diego Cuasapaz	Crear el proceso                                    #
+# 2026-02-04	Diego Cuasapaz	Actualizar para carga dinámica basada en parámetros #
 #####################################################################################
 
 PROCESO=DC_DPA_ECU
@@ -10,7 +11,7 @@ PROCESO=DC_DPA_ECU
 ###################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: 1. Generar y validar parametros del file LOG"
 ###################################################################################################################
-VAL_RUTA=/home/dcuasapaz/git/dbeaver
+VAL_RUTA=/home/dcuasapaz/git/dbeaver/data_ingestion/postgis_dpa
 VAL_RUTA_LOG=/home/dcuasapaz/wrk/log
 VAL_DIA=`date '+%Y%m%d'`
 VAL_HORA=`date '+%H%M%S'`
@@ -30,6 +31,8 @@ else
     echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_DIA      => $VAL_DIA" >>$VAL_LOG
     echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_HORA     => $VAL_HORA" >>$VAL_LOG
     echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_LOG      => $VAL_LOG" >>$VAL_LOG
+    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_SUBDIR   => $VAL_SUBDIR" >>$VAL_LOG
+    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_SHP_PATH => $VAL_SHP_PATH" >>$VAL_LOG
 fi
 
 echo `date '+%Y-%m-%d %H:%M:%S'`"------------------------------------------" >>$VAL_LOG
@@ -41,16 +44,20 @@ VAL_DB="dpa_ecu"
 VAL_SCHEMA="dpa"
 VAL_TABLE=$1
 VAL_NAME_TABLE="$VAL_SCHEMA.$VAL_TABLE"
-VAL_SHP_PATH=$VAL_RUTA/fnt/INEC2012/EcdCntSmpGlp/$2.shp
+VAL_SUBDIR=$4
+VAL_SHP_PATH=$VAL_RUTA/fnt/$VAL_SUBDIR/$2.shp
 
 if [ -z "$VAL_USER" ] ||
     [ -z "$VAL_DB" ] ||
     [ -z "$VAL_SCHEMA" ] ||
     [ -z "$VAL_TABLE" ] ||
     [ -z "$VAL_NAME_TABLE" ] || 
+    [ -z "$VAL_SUBDIR" ] ||
     [ -z "$VAL_SHP_PATH" ] ||
     [ -z "$1" ] ||
-    [ -z "$2" ] ;  then
+    [ -z "$2" ] ||
+    [ -z "$3" ] ||
+    [ -z "$4" ] ;  then
     echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros esta vacio o nulo [Creacion del file log]" >>$VAL_LOG
     exit 1
 fi
