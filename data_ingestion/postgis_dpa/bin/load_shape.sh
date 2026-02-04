@@ -5,49 +5,62 @@
 # 2026-02-04	Diego Cuasapaz	Crear el proceso                                    #
 # 2026-02-04	Diego Cuasapaz	Actualizar para carga dinámica basada en parámetros #
 # 2026-02-04	Diego Cuasapaz	Optimizaciones: rutas dinámicas, validación de archivo, funciones modulares #
+# 2026-02-04	Diego Cuasapaz	Configuración externa, logging mejorado, versionado de datos #
 #####################################################################################
 
 PROCESO=DC_DPA_ECU
 
-###################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: 1. Generar y validar parametros del file LOG"
+# Cargar configuración externa
+CONFIG_FILE=$(dirname $(readlink -f $0))/config.sh
+if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+else
+    echo "ERROR: Archivo de configuración $CONFIG_FILE no encontrado"
+    exit 1
+fi
+
+# Función de logging mejorado
+log() {
+    local level=$1
+    local message=$2
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local log_entry="$timestamp $level: $message"
+    
+    # Enviar a archivo si VAL_LOG está definido
+    if [ -n "$VAL_LOG" ]; then
+        echo "$log_entry" >> "$VAL_LOG"
+    fi
+    
+    # Enviar a syslog si habilitado
+    if [ "$USE_SYSLOG" = "true" ]; then
+        logger -t "$PROCESO" "$level: $message"
+    fi
+    
+    # Mostrar en consola si DEBUG
+    if [ "$LOG_LEVEL" = "DEBUG" ]; then
+        echo "$log_entry"
+    fi
+}
+
 ###################################################################################################################
 # Ruta dinámica basada en la ubicación del script
 VAL_RUTA=$(dirname $(dirname $(readlink -f $0)))
-VAL_RUTA_LOG=/home/dcuasapaz/wrk/log
-VAL_DIA=`date '+%Y%m%d'`
-VAL_HORA=`date '+%H%M%S'`
+VAL_RUTA_LOG=$LOG_DIR
+VAL_DIA=$(date '+%Y%m%d')
+VAL_HORA=$(date '+%H%M%S')
 VAL_LOG=$VAL_RUTA_LOG/$PROCESO"_"$2"_"$VAL_DIA"_"$VAL_HORA.log
 
-if [ -z "$VAL_RUTA" ] ||
-    [ -z "$VAL_RUTA_LOG" ] ||
-    [ -z "$VAL_DIA" ] ||
+log "INFO" "1. Generar y validar parametros del file LOG"
 
-    [ -z "$VAL_HORA" ] ||
-    [ -z "$VAL_LOG" ] ; then
-    echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros esta vacio o nulo [Creacion del file log]" >>$VAL_LOG
-    exit 1
-else
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_RUTA     => $VAL_RUTA" >>$VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_RUTA_LOG => $VAL_RUTA_LOG" >>$VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_DIA      => $VAL_DIA" >>$VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_HORA     => $VAL_HORA" >>$VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_LOG      => $VAL_LOG" >>$VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_SUBDIR   => $VAL_SUBDIR" >>$VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: VAL_SHP_PATH => $VAL_SHP_PATH" >>$VAL_LOG
-fi
+log "INFO" "2. Leer parametros de ejecucion"
 
-echo `date '+%Y-%m-%d %H:%M:%S'`"------------------------------------------" >>$VAL_LOG
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: 2. Leer parametros de ejecucion" >>$VAL_LOG
-echo `date '+%Y-%m-%d %H:%M:%S'`"------------------------------------------" >>$VAL_LOG
-
-VAL_USER="dcuasapaz"
-VAL_DB="dpa_ecu"
-VAL_SCHEMA="dpa"
+VAL_USER=$DB_USER
+VAL_DB=$DB_NAME
+VAL_SCHEMA=$DB_SCHEMA
 VAL_TABLE=$1
 VAL_NAME_TABLE="$VAL_SCHEMA.$VAL_TABLE"
 VAL_SUBDIR=$4
-VAL_SHP_PATH=$VAL_RUTA/fnt/$VAL_SUBDIR/$2.shp
+VAL_SHP_PATH=$VAL_RUTA/$DATA_DIR/$VAL_SUBDIR/$2.shp
 
 if [ -z "$VAL_USER" ] ||
     [ -z "$VAL_DB" ] ||
@@ -60,33 +73,34 @@ if [ -z "$VAL_USER" ] ||
     [ -z "$2" ] ||
     [ -z "$3" ] ||
     [ -z "$4" ] ;  then
-    echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros esta vacio o nulo [Creacion del file log]" >>$VAL_LOG
+    log "ERROR" "Uno de los parametros esta vacio o nulo"
     exit 1
 fi
 
 # Validar que el archivo Shapefile existe
 if [ ! -f "$VAL_SHP_PATH" ]; then
-    echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: El archivo $VAL_SHP_PATH no existe" >>$VAL_LOG
+    log "ERROR" "El archivo $VAL_SHP_PATH no existe"
     exit 1
 fi
 
-echo `date '+%Y-%m-%d %H:%M:%S'`"------------------------------------------" >>$VAL_LOG
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: 3. Iniciando proceso de carga en: $VAL_DB" >>$VAL_LOG
-echo `date '+%Y-%m-%d %H:%M:%S'`"------------------------------------------" >>$VAL_LOG
+log "INFO" "VAL_SUBDIR => $VAL_SUBDIR"
+log "INFO" "VAL_SHP_PATH => $VAL_SHP_PATH"
+
+log "INFO" "3. Iniciando proceso de carga en: $VAL_DB"
 
 VAL_ETAPA=1
 # 1. Crear el esquema si no existe
-# Esto evita el error de "VAL_SCHEMA does not exist"
 if [ $VAL_ETAPA -eq 1 ]; then
     psql -U "$VAL_USER" -d "$VAL_DB" -c "CREATE SCHEMA IF NOT EXISTS $VAL_SCHEMA;" >>$VAL_LOG
     VAL_ETAPA=2
 fi
 # 2. Ejecutar la carga con shp2pgsql
-# -d: Borra la tabla si ya existe (evita el error que tuviste)
-# -I: Crea índice espacial
-# -W "LATIN1": Para que reconozca tildes y eñes de Ecuador
 if [ $VAL_ETAPA -eq 2 ]; then
-    shp2pgsql -s $3 -d -I -W "LATIN1" "$VAL_SHP_PATH" "$VAL_NAME_TABLE" | psql -U "$VAL_USER" -d "$VAL_DB" >>$VAL_LOG
+    if [ "$DROP_TABLE" = "true" ]; then
+        shp2pgsql -s $3 -d -I -W "$ENCODING" "$VAL_SHP_PATH" "$VAL_NAME_TABLE" | psql -U "$VAL_USER" -d "$VAL_DB" >>$VAL_LOG
+    else
+        shp2pgsql -s $3 -I -W "$ENCODING" "$VAL_SHP_PATH" "$VAL_NAME_TABLE" | psql -U "$VAL_USER" -d "$VAL_DB" >>$VAL_LOG
+    fi
     VAL_ETAPA=3
 fi
 # 3. Optimizar la tabla con VACUUM ANALYZE
@@ -94,22 +108,21 @@ if [ $VAL_ETAPA -eq 3 ]; then
     psql -U "$VAL_USER" -d "$VAL_DB" -c "VACUUM ANALYZE $VAL_NAME_TABLE;" >>$VAL_LOG
     VAL_ETAPA=4
 fi
-# 3. Verificación final
+# 4. Versionado de datos: Insertar metadata
 if [ $VAL_ETAPA -eq 4 ]; then
-    echo `date '+%Y-%m-%d %H:%M:%S'`"------------------------------------------" >>$VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ✅ Carga exitosa: $VAL_NAME_TABLE" >>$VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`"------------------------------------------" >>$VAL_LOG
+    psql -U "$VAL_USER" -d "$VAL_DB" -c "CREATE TABLE IF NOT EXISTS $METADATA_TABLE (table_name TEXT, version TEXT, load_date TIMESTAMP, source_file TEXT);" >>$VAL_LOG
+    psql -U "$VAL_USER" -d "$VAL_DB" -c "INSERT INTO $METADATA_TABLE (table_name, version, load_date, source_file) VALUES ('$VAL_NAME_TABLE', '$DATA_VERSION', NOW(), '$VAL_SHP_PATH');" >>$VAL_LOG
+    VAL_ETAPA=5
+fi
+# 4. Verificación final
+if [ $VAL_ETAPA -eq 5 ]; then
+    log "INFO" "Carga exitosa: $VAL_NAME_TABLE"
     # Mostrar cuántos registros se cargaron
     VAL_CONTEO=$(psql -U "$VAL_USER" -d "$VAL_DB" -t -c "SELECT count(*) AS registrosCargados FROM $VAL_NAME_TABLE;")
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ======================================================================" >> $VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Registros insertados: $VAL_CONTEO" >> $VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ======================================================================" >> $VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Finaliza ejecucion del proceso: $PROCESO" >> $VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ======================================================================" >> $VAL_LOG
+    log "INFO" "Registros insertados: $VAL_CONTEO"
+    log "INFO" "Finaliza ejecucion del proceso: $PROCESO"
     exit 0
 else
-    echo `date '+%Y-%m-%d %H:%M:%S'`" ❌ ERROR: ======================================================================" >> $VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" ❌ ERROR: Hubo un fallo en la conversión o carga del SHP." >>$VAL_LOG
-    echo `date '+%Y-%m-%d %H:%M:%S'`" ❌ ERROR: ======================================================================" >> $VAL_LOG    
+    log "ERROR" "Hubo un fallo en la conversión o carga del SHP."
     exit 1
 fi

@@ -34,6 +34,16 @@ Para cargar múltiples archivos de manera automatizada, utiliza el script `batch
 ```bash
 sh -x batch_load.sh
 ```
+
+### **Pruebas Automatizadas**
+Ejecuta pruebas para validar la configuración y cargas previas:
+
+```bash
+sh -x test_load.sh
+```
+
+### **Configuración Externa**
+Los parámetros se configuran en `config.sh`. Modifica este archivo para adaptar el entorno sin cambiar el código.
 ---
 
 ## 🛠️ Definición de Parámetros
@@ -165,6 +175,24 @@ Script `batch_load.sh` permite cargar múltiples archivos en secuencia, con cont
 - Considera particionamiento de tablas para datasets grandes.
 - Implementa backups regulares de la base de datos.
 - Monitorea el rendimiento con `EXPLAIN ANALYZE` en consultas complejas.
+
+---
+
+## 🔧 Mejoras Avanzadas Implementadas
+
+### **Configuración Externa**
+Archivo `config.sh` centraliza parámetros como credenciales, rutas y opciones. Facilita la portabilidad entre entornos.
+
+### **Logging Mejorado**
+- Logs estructurados con niveles (INFO, ERROR, etc.).
+- Soporte opcional para syslog.
+- Salida a consola en modo DEBUG.
+
+### **Versionado de Datos**
+Tabla de metadata `$METADATA_TABLE` registra versiones, fechas de carga y fuentes de datos para rastreo de cambios.
+
+### **Pruebas Automatizadas**
+Script `test_load.sh` valida conexiones, esquemas, índices y datos cargados, asegurando integridad del proceso.
 
 ---
 
