@@ -27,6 +27,13 @@ El script debe ejecutarse desde la carpeta de binarios del proyecto:
 ```bash
 sh -x load_shape.sh [Param1] [Param2] [Param3] [Param4]
 ```
+
+### **Carga por Lotes**
+Para cargar múltiples archivos de manera automatizada, utiliza el script `batch_load.sh`. Edita la lista `CARGAS` en el script para definir las cargas deseadas.
+
+```bash
+sh -x batch_load.sh
+```
 ---
 
 ## 🛠️ Definición de Parámetros
@@ -136,6 +143,28 @@ Los Shapefiles incluyen múltiples componentes:
 - `.cpg` - Codificación de página (opcional)
 - `.sbn`, `.sbx` - Índices de búsqueda (opcional)
 - `.shp.xml` - Metadatos XML (opcional)
+
+---
+
+## 🔧 Optimizaciones Implementadas
+
+### **Rutas Dinámicas**
+El script detecta automáticamente su ubicación para evitar rutas hardcodeadas.
+
+### **Validación de Archivos**
+Se verifica la existencia del archivo Shapefile antes de iniciar la carga.
+
+### **Optimización de Base de Datos**
+Después de la carga, se ejecuta `VACUUM ANALYZE` para optimizar el rendimiento de consultas.
+
+### **Carga por Lotes**
+Script `batch_load.sh` permite cargar múltiples archivos en secuencia, con control de errores.
+
+### **Recomendaciones Adicionales**
+- Usa índices espaciales GIST para consultas geoespaciales.
+- Considera particionamiento de tablas para datasets grandes.
+- Implementa backups regulares de la base de datos.
+- Monitorea el rendimiento con `EXPLAIN ANALYZE` en consultas complejas.
 
 ---
 

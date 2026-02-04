@@ -4,6 +4,7 @@
 # FECHA  		AUTOR     		DESCRIPCION MOTIVO						            #
 # 2026-02-04	Diego Cuasapaz	Crear el proceso                                    #
 # 2026-02-04	Diego Cuasapaz	Actualizar para carga dinámica basada en parámetros #
+# 2026-02-04	Diego Cuasapaz	Optimizaciones: rutas dinámicas, validación de archivo, funciones modulares #
 #####################################################################################
 
 PROCESO=DC_DPA_ECU
@@ -11,7 +12,8 @@ PROCESO=DC_DPA_ECU
 ###################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: 1. Generar y validar parametros del file LOG"
 ###################################################################################################################
-VAL_RUTA=/home/dcuasapaz/git/dbeaver/data_ingestion/postgis_dpa
+# Ruta dinámica basada en la ubicación del script
+VAL_RUTA=$(dirname $(dirname $(readlink -f $0)))
 VAL_RUTA_LOG=/home/dcuasapaz/wrk/log
 VAL_DIA=`date '+%Y%m%d'`
 VAL_HORA=`date '+%H%M%S'`
@@ -62,6 +64,12 @@ if [ -z "$VAL_USER" ] ||
     exit 1
 fi
 
+# Validar que el archivo Shapefile existe
+if [ ! -f "$VAL_SHP_PATH" ]; then
+    echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: El archivo $VAL_SHP_PATH no existe" >>$VAL_LOG
+    exit 1
+fi
+
 echo `date '+%Y-%m-%d %H:%M:%S'`"------------------------------------------" >>$VAL_LOG
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: 3. Iniciando proceso de carga en: $VAL_DB" >>$VAL_LOG
 echo `date '+%Y-%m-%d %H:%M:%S'`"------------------------------------------" >>$VAL_LOG
@@ -79,9 +87,15 @@ fi
 # -W "LATIN1": Para que reconozca tildes y eñes de Ecuador
 if [ $VAL_ETAPA -eq 2 ]; then
     shp2pgsql -s $3 -d -I -W "LATIN1" "$VAL_SHP_PATH" "$VAL_NAME_TABLE" | psql -U "$VAL_USER" -d "$VAL_DB" >>$VAL_LOG
+    VAL_ETAPA=3
+fi
+# 3. Optimizar la tabla con VACUUM ANALYZE
+if [ $VAL_ETAPA -eq 3 ]; then
+    psql -U "$VAL_USER" -d "$VAL_DB" -c "VACUUM ANALYZE $VAL_NAME_TABLE;" >>$VAL_LOG
+    VAL_ETAPA=4
 fi
 # 3. Verificación final
-if [ $VAL_ETAPA -eq 2 ]; then
+if [ $VAL_ETAPA -eq 4 ]; then
     echo `date '+%Y-%m-%d %H:%M:%S'`"------------------------------------------" >>$VAL_LOG
     echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ✅ Carga exitosa: $VAL_NAME_TABLE" >>$VAL_LOG
     echo `date '+%Y-%m-%d %H:%M:%S'`"------------------------------------------" >>$VAL_LOG
