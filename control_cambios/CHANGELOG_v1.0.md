@@ -1,16 +1,34 @@
-# 📋 CONTROL DE CAMBIOS - PROYECTO DPA ECUADOR
-## Versión 1.0 - Fecha: 4 de febrero de 2026
+# 📋 CONTROL DE CAMBIOS - PROCESO POSTGIS_DPA
+## Sistema DPA Ecuador - Versión 1.0
+## Fecha: 4 de febrero de 2026
 ## Autor: Diego Cuasapaz
 
 ---
 
-## 🎯 **RESUMEN EJECUTIVO**
+## 🏗️ **ORGANIZACIÓN POR PROCESOS**
 
-Se ha completado la refactorización completa del sistema de carga masiva de datos DPA Ecuador, incluyendo:
-- ✅ Renombrado de componentes con prefijo `dpa_`
-- ✅ Corrección de logging acumulativo
-- ✅ Optimización de rutas y eliminación de archivos obsoletos
-- ✅ Mejora de la documentación y mantenibilidad
+La documentación de cambios está organizada por procesos del sistema **PostGIS_DPA**:
+
+### **📂 Estructura de Procesos:**
+```
+control_cambios/
+├── procesos/
+│   └── postgis_dpa/
+│       ├── configuracion/     # ⚙️ Configuración del sistema
+│       ├── carga_datos/       # 📥 Ingesta de datos
+│       ├── logging/           # 📊 Trazabilidad
+│       ├── testing/           # 🧪 Validación
+│       └── documentacion/     # 📚 Control de cambios
+└── [archivos principales...]
+```
+
+### **🔗 Acceso Rápido:**
+- **[📋 Índice de Procesos](procesos/postgis_dpa/README.md)** - Visión general completa
+- **[⚙️ Configuración](procesos/postgis_dpa/configuracion/)** - Variables y rutas
+- **[📥 Carga de Datos](procesos/postgis_dpa/carga_datos/)** - Scripts de ingesta
+- **[📊 Logging](procesos/postgis_dpa/logging/)** - Sistema de trazabilidad
+- **[🧪 Testing](procesos/postgis_dpa/testing/)** - Suite de pruebas
+- **[📚 Documentación](procesos/postgis_dpa/documentacion/)** - Control de cambios
 
 ---
 
