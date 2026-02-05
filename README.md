@@ -206,6 +206,14 @@ Permite rastreo granular de cada etapa del proceso de carga para auditoría y de
 
 ### **Pruebas Automatizadas**
 Script `test_load.sh` valida conexiones, esquemas, índices y datos cargados, asegurando integridad del proceso.
+- **Parametrizable**: `bash bin/test_load.sh [esquema] [tabla]` para probar tablas específicas
+- **Por defecto**: Si no se pasan parámetros, prueba `dpa.ec_ecu_prv`
+
+### **Logging Modular**
+Script `log_execution.sh` proporciona logging genérico reutilizable en otros subprocesos:
+- **Crear tabla**: `./log_execution.sh create_table`
+- **Insertar log**: `./log_execution.sh insert <execution_id> <process_name> <step> [parámetros...]`
+- **Reutilizable**: Cualquier subproceso puede usar este script para logging consistente
 
 ---
 

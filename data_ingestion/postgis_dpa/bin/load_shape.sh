@@ -20,29 +20,12 @@ else
 fi
 
 # Crear tabla de logs de ejecución si no existe
-psql -U "$DB_USER" -d "$DB_NAME" -c "
-CREATE TABLE IF NOT EXISTS $EXECUTION_LOG_TABLE (
-    id SERIAL PRIMARY KEY,
-    execution_id INTEGER,
-    process_name TEXT,
-    step TEXT,
-    schema_name TEXT,
-    table_name TEXT,
-    records_count INTEGER,
-    start_time TIMESTAMP,
-    end_time TIMESTAMP,
-    status TEXT,
-    details TEXT,
-    log_time TIMESTAMP
-);
-ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS step TEXT;
-ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS schema_name TEXT;
-ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS table_name TEXT;
-ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS records_count INTEGER;" 2>/dev/null || true
+$(dirname $(readlink -f $0))/log_execution.sh create_table
 
 # Iniciar registro de ejecución
 EXECUTION_ID=$$
-psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; INSERT INTO $EXECUTION_LOG_TABLE (execution_id, process_name, step, schema_name, table_name, start_time, status, details) VALUES ($EXECUTION_ID, '$PROCESO', 'START', '$VAL_SCHEMA', '$VAL_TABLE', NOW(), 'STARTED', 'Carga de $2 en $1');"
+EXECUTION_START_TIME=$(date +%Y-%m-%d\ %H:%M:%S)
+$(dirname $(readlink -f $0))/log_execution.sh insert $EXECUTION_ID "$PROCESO" START "$VAL_SCHEMA" "$VAL_TABLE" "" "$EXECUTION_START_TIME" "" STARTED "Carga de $2 en $1"
 
 # Función de logging mejorado
 log() {
@@ -123,7 +106,7 @@ if [ $VAL_ETAPA -eq 1 ]; then
 fi
 # 2. Ejecutar la carga con shp2pgsql
 if [ $VAL_ETAPA -eq 2 ]; then
-    psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; INSERT INTO $EXECUTION_LOG_TABLE (execution_id, process_name, step, schema_name, table_name, start_time, status, details) VALUES ($EXECUTION_ID, '$PROCESO', 'LOAD', '$VAL_SCHEMA', '$VAL_TABLE', NOW(), 'LOADING', 'Iniciando carga de Shapefile');" 2>/dev/null || true
+    $(dirname $(readlink -f $0))/log_execution.sh insert $EXECUTION_ID "$PROCESO" LOAD "$VAL_SCHEMA" "$VAL_TABLE" "" "$(date +%Y-%m-%d\ %H:%M:%S)" "" LOADING "Iniciando carga de Shapefile"
     if [ "$DROP_TABLE" = "true" ]; then
         shp2pgsql -s $3 -d -I -W "$ENCODING" "$VAL_SHP_PATH" "$VAL_NAME_TABLE" | psql -U "$VAL_USER" -d "$VAL_DB" >>$VAL_LOG
     else
@@ -150,11 +133,11 @@ if [ $VAL_ETAPA -eq 5 ]; then
     log "INFO" "Registros insertados: $VAL_CONTEO"
     log "INFO" "Finaliza ejecucion del proceso: $PROCESO"
     # Insertar registro de finalización
-    psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; INSERT INTO $EXECUTION_LOG_TABLE (execution_id, process_name, step, schema_name, table_name, records_count, end_time, status, details) VALUES ($EXECUTION_ID, '$PROCESO', 'FINISH', '$VAL_SCHEMA', '$VAL_TABLE', $VAL_CONTEO, NOW(), 'SUCCESS', 'Carga completada');" 2>/dev/null || true
+    $(dirname $(readlink -f $0))/log_execution.sh insert $EXECUTION_ID "$PROCESO" FINISH "$VAL_SCHEMA" "$VAL_TABLE" $VAL_CONTEO "$EXECUTION_START_TIME" "$(date +%Y-%m-%d\ %H:%M:%S)" SUCCESS "Carga completada"
     exit 0
 else
     log "ERROR" "Hubo un fallo en la conversión o carga del SHP."
     # Insertar registro de error
-    psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; INSERT INTO $EXECUTION_LOG_TABLE (execution_id, process_name, step, schema_name, table_name, end_time, status, details) VALUES ($EXECUTION_ID, '$PROCESO', 'FAILED', '$VAL_SCHEMA', '$VAL_TABLE', NOW(), 'FAILED', 'Error en etapa $VAL_ETAPA');" 2>/dev/null || true
+    $(dirname $(readlink -f $0))/log_execution.sh insert $EXECUTION_ID "$PROCESO" FAILED "$VAL_SCHEMA" "$VAL_TABLE" "" "" "$(date +%Y-%m-%d\ %H:%M:%S)" FAILED "Error en etapa $VAL_ETAPA"
     exit 1
 fi
