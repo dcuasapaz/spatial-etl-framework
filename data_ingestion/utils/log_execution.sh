@@ -26,26 +26,14 @@ shift 2
 
 case $ACTION in
     create_table)
-        # Crear tabla de logs de ejecución si no existe
-        psql -U "$DB_USER" -d "$DB_NAME" -c "
-        CREATE TABLE IF NOT EXISTS $EXECUTION_LOG_TABLE (
-            id SERIAL PRIMARY KEY,
-            execution_id INTEGER,
-            process_name TEXT,
-            step TEXT,
-            schema_name TEXT,
-            table_name TEXT,
-            records_count INTEGER,
-            start_time TIMESTAMP,
-            end_time TIMESTAMP,
-            status TEXT,
-            details TEXT,
-            log_time TIMESTAMP
-        );
-        ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS step TEXT;
-        ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS schema_name TEXT;
-        ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS table_name TEXT;
-        ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS records_count INTEGER;" 2>/dev/null || true
+        # Crear tabla de logs de ejecución
+        SQL_FILE="$(dirname $(readlink -f $0))/../sql/create_execution_logs.sql"
+        if [ -f "$SQL_FILE" ]; then
+            psql -U "$DB_USER" -d "$DB_NAME" -f "$SQL_FILE"
+        else
+            echo "ERROR: Archivo SQL no encontrado: $SQL_FILE"
+            exit 1
+        fi
         ;;
 
     insert)
