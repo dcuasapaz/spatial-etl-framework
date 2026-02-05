@@ -35,9 +35,8 @@ CREATE TABLE IF NOT EXISTS $EXECUTION_LOG_TABLE (
 );" 2>/dev/null || true
 
 # Iniciar registro de ejecución
-EXECUTION_ID=$(psql -U "$DB_USER" -d "$DB_NAME" -t -c "
-INSERT INTO $EXECUTION_LOG_TABLE (process_name, start_time, status, details) 
-VALUES ('$PROCESO', NOW(), 'STARTED', 'Carga de $2 en $1') RETURNING id;")
+EXECUTION_ID=$$
+psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; INSERT INTO $EXECUTION_LOG_TABLE (execution_id, process_name, start_time, status, details) VALUES ($EXECUTION_ID, '$PROCESO', NOW(), 'STARTED', 'Carga de $2 en $1');"
 
 # Función de logging mejorado
 log() {
@@ -52,9 +51,7 @@ log() {
     fi
     
     # Insertar en BD
-    psql -U "$DB_USER" -d "$DB_NAME" -c "
-    INSERT INTO $EXECUTION_LOG_TABLE (execution_id, log_level, message, log_time) 
-    VALUES ($EXECUTION_ID, '$level', '$message', '$timestamp');" 2>/dev/null || true
+    psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; INSERT INTO $EXECUTION_LOG_TABLE (execution_id, log_level, message, log_time) VALUES ($EXECUTION_ID, '$level', '$message', '$timestamp');" 2>/dev/null || true
     
     # Enviar a syslog si habilitado
     if [ "$USE_SYSLOG" = "true" ]; then
@@ -136,7 +133,7 @@ fi
 # 4. Versionado de datos: Insertar metadata
 if [ $VAL_ETAPA -eq 4 ]; then
     psql -U "$VAL_USER" -d "$VAL_DB" -c "CREATE TABLE IF NOT EXISTS $METADATA_TABLE (table_name TEXT, version TEXT, load_date TIMESTAMP, source_file TEXT);" >>$VAL_LOG
-    psql -U "$VAL_USER" -d "$VAL_DB" -c "INSERT INTO $METADATA_TABLE (table_name, version, load_date, source_file) VALUES ('$VAL_NAME_TABLE', '$DATA_VERSION', NOW(), '$VAL_SHP_PATH');" >>$VAL_LOG
+    psql -U "$VAL_USER" -d "$VAL_DB" -c "SET search_path TO dpa, public; INSERT INTO $METADATA_TABLE (table_name, version, load_date, source_file) VALUES ('$VAL_NAME_TABLE', '$DATA_VERSION', NOW(), '$VAL_SHP_PATH');" >>$VAL_LOG
     VAL_ETAPA=5
 fi
 # 4. Verificación final
@@ -147,17 +144,11 @@ if [ $VAL_ETAPA -eq 5 ]; then
     log "INFO" "Registros insertados: $VAL_CONTEO"
     log "INFO" "Finaliza ejecucion del proceso: $PROCESO"
     # Actualizar registro de ejecución
-    psql -U "$DB_USER" -d "$DB_NAME" -c "
-    UPDATE $EXECUTION_LOG_TABLE 
-    SET end_time = NOW(), status = 'SUCCESS', details = 'Carga completada: $VAL_CONTEO registros' 
-    WHERE id = $EXECUTION_ID;" 2>/dev/null || true
+    psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; UPDATE $EXECUTION_LOG_TABLE SET end_time = NOW(), status = 'SUCCESS', details = 'Carga completada: $VAL_CONTEO registros' WHERE execution_id = $EXECUTION_ID;" 2>/dev/null || true
     exit 0
 else
     log "ERROR" "Hubo un fallo en la conversión o carga del SHP."
     # Actualizar registro de ejecución con error
-    psql -U "$DB_USER" -d "$DB_NAME" -c "
-    UPDATE $EXECUTION_LOG_TABLE 
-    SET end_time = NOW(), status = 'FAILED', details = 'Error en etapa $VAL_ETAPA' 
-    WHERE id = $EXECUTION_ID;" 2>/dev/null || true
+    psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; UPDATE $EXECUTION_LOG_TABLE SET end_time = NOW(), status = 'FAILED', details = 'Error en etapa $VAL_ETAPA' WHERE id = $EXECUTION_ID;" 2>/dev/null || true
     exit 1
 fi
