@@ -375,8 +375,8 @@ dbeaver/
 Este proyecto forma parte de mi portafolio profesional como **Ingeniero de Datos**. Si te interesa discutir sobre la arquitectura, el stack tecnológico o explorar oportunidades de colaboración, no dudes en contactarme.
 
 *   👤 **Diego Cuasapaz**
-*   💼 **Rol:** Data Engineer | GIS Specialist
-*   🔗 **Conectemos:** [Perfil de LinkedIn](https://www.linkedin.com/)
+*   💼 **Rol:** | Data Engineer Sr. | Data Architect | Specialist Data Ingestion | Spark Expert | Specialist BigData | GIS Specialist (Research)
+*   🔗 **Conectemos:** [Perfil de LinkedIn](https://www.linkedin.com/in/dcuasapaz/)
 
 ---
 *© 2026 Spatial ETL Framework. Código desarrollado bajo estándares profesionales.*
