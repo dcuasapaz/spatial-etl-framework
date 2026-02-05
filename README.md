@@ -1,31 +1,103 @@
 # 🗺️ Macroproyecto: Data Ingestion - DPA Ecuador
+# 🗺️ Spatial ETL Framework: Ingesta Automatizada de Datos Geoespaciales (DPA Ecuador)
 
 Este repositorio contiene el macroproyecto de ingesta de datos, con el subproceso de automatización para la carga de capas geográficas de la División Político Administrativa (DPA) de Ecuador en **PostgreSQL/PostGIS**.
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![PostGIS](https://img.shields.io/badge/PostGIS-316192?style=for-the-badge&logo=postgis&logoColor=white)
+![Bash](https://img.shields.io/badge/Shell_Script-121011?style=for-the-badge&logo=gnu-bash&logoColor=white)
+![GDAL](https://img.shields.io/badge/GDAL-5F8B95?style=for-the-badge&logo=gdal&logoColor=white)
+
+## � Descripción del Proyecto
+
+Este repositorio aloja un framework de ingeniería de datos diseñado para la **automatización, transformación y carga (ETL)** masiva de información geográfica de la División Político Administrativa (DPA) de Ecuador hacia **PostgreSQL/PostGIS**.
+
+El sistema resuelve el desafío de integrar múltiples fuentes de datos cartográficos (Shapefiles) con diferentes proyecciones y esquemas, estandarizándolos en un modelo de datos espacial unificado y optimizado para análisis geográfico.
 
 ---
 
 ## 👥 Control de Modificaciones
+## �👥 Control de Modificaciones
 | Fecha | Autor | Descripción / Motivo |
 | :--- | :--- | :--- |
 | 2026-02-04 | Diego Cuasapaz | Creación inicial del proceso y documentación base. |
 | 2026-02-04 | Diego Cuasapaz | Reorganización de directorios y actualización de documentación considerando data_ingestion como macroproyecto.
+## 🚀 Características Principales
+
+*   **🔄 Automatización Batch:** Script de descubrimiento recursivo (`batch_load.sh`) que procesa directorios completos de Shapefiles sin intervención manual.
+*   **🌍 Inteligencia Espacial:** Detección dinámica de SRID (Sistemas de Referencia de Coordenadas) basada en la fuente (UTM 17S vs WGS84).
+*   **🛡️ Observabilidad Completa:** Sistema de logging dual (Archivos planos + Tablas de auditoría en BD) para trazabilidad total de la ejecución.
+*   **⚡ Optimización Automática:** Generación de índices espaciales **GIST** y actualización de estadísticas (`VACUUM ANALYZE`) post-carga.
+*   **🧪 Calidad de Datos:** Suite de pruebas automatizadas (`test_load.sh`) para validar integridad referencial y geometría.
 
 ---
 
 ## 📝 Descripción del Proceso
 El script `load_shape.sh` automatiza la conversión de archivos Shapefile (.shp) a tablas espaciales en PostGIS. El proceso incluye la creación automática de índices espaciales (GIST) y permite la definición dinámica de proyecciones (SRID).
+## 🏗️ Arquitectura del Sistema
+
+El flujo de datos orquesta herramientas de sistema (Bash) y librerías geoespaciales (GDAL/OGR) para realizar una carga transaccional eficiente.
+
+```mermaid
+graph TD
+    %% Estilos del Diagrama
+    classDef source fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000;
+    classDef process fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,color:#000;
+    classDef db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000;
+
+    subgraph "📥 Fuentes de Datos"
+        A[📂 Shapefiles (.shp)]:::source
+    end
+
+    subgraph "⚙️ Motor de Procesamiento (ETL)"
+        B[🔄 batch_load.sh<br/>Descubrimiento]:::process -->|Ejecuta| C[🛠️ load_shape.sh<br/>Carga Individual]:::process
+        C -->|Valida| D{📐 Detector SRID}:::process
+        D -->|UTM 17S| E[🌍 shp2pgsql]:::process
+        D -->|WGS84| E
+    end
+
+    subgraph "🗄️ Capa de Persistencia (PostGIS)"
+        E -->|Stream SQL| F[(🐘 Base de Datos)]:::db
+        F --> G[🗺️ Tablas Espaciales]:::db
+        C -.->|Registra| H[📊 Logs & Metadata]:::db
+    end
+
+    A -->|Input| B
+```
 
 ---
 
 ## 🚀 Guía de Ejecución
+## 🛠️ Documentación Técnica
 
 ### **Ubicación del Binario**
 El script debe ejecutarse desde la carpeta de binarios del proyecto:  
 `📂 /home/dcuasapaz/git/dbeaver/data_ingestion/postgis_dpa/bin`
+### Requisitos Previos
+*   **PostgreSQL** (9.5+) con extensión **PostGIS** (2.2+)
+*   **GDAL/OGR Tools** (`shp2pgsql`)
+*   **Bash Shell** (Entorno Linux/Unix)
 
 ### **Comando de ejecución**
+### Estructura del Proyecto
+```
+spatial-etl-framework/
+├── data_ingestion/
+│   ├── postgis_dpa/
+│   │   ├── bin/           # Scripts: load_shape.sh, batch_load.sh, config.sh
+│   │   ├── sql/           # Scripts SQL de estructura y validación
+│   │   └── fnt/           # Fuentes de datos (Shapefiles organizados)
+│   └── utils/             # Utilidades transversales (Logging)
+```
+
+### Guía de Ejecución
+
+#### 1. Carga por Lotes (Recomendado)
+Para cargar automáticamente todos los archivos detectados en el directorio `fnt/`:
+
 ```bash
 sh -x load_shape.sh [Param1] [Param2] [Param3] [Param4]
+cd data_ingestion/postgis_dpa/bin
+sh batch_load.sh
 ```
 
 ### **Carga por Lotes**
@@ -298,16 +370,13 @@ dbeaver/
 
 ---
 
-## 📧 Contacto y Soporte
+## 🤝 Contacto y Networking
 
-Para consultas o reportes de errores relacionados con este proceso:
-- **Responsable:** Diego Cuasapaz
-- **Proyecto:** Data Ingestion - DPA Ecuador
-- **Última actualización:** 2026-02-04
+Este proyecto forma parte de mi portafolio profesional como **Ingeniero de Datos**. Si te interesa discutir sobre la arquitectura, el stack tecnológico o explorar oportunidades de colaboración, no dudes en contactarme.
+
+*   👤 **Diego Cuasapaz**
+*   💼 **Rol:** Data Engineer | GIS Specialist
+*   🔗 **Conectemos:** [Perfil de LinkedIn](https://www.linkedin.com/)
 
 ---
-***Documentación técnica - Macroproyecto Data Ingestion - DPA Ecuador***
-
-_Generado por: Diego Cuasapaz_  
-_Fecha de última actualización: 2026-02-04_  
-***Nota:*** Este proceso es de uso exclusivo para el área de gestión de datos espaciales.*
+*© 2026 Spatial ETL Framework. Código desarrollado bajo estándares profesionales.*
