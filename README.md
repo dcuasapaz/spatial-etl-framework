@@ -206,6 +206,15 @@ Permite rastreo granular de cada etapa del proceso de carga para auditoría y de
 
 ### **Pruebas Automatizadas**
 Script `test_load.sh` valida conexiones, esquemas, índices y datos cargados, asegurando integridad del proceso.
+- **Parametrizable**: `bash bin/test_load.sh [esquema] [tabla]` para probar tablas específicas
+- **Por defecto**: Si no se pasan parámetros, prueba `dpa.ec_ecu_prv`
+
+### **Logging Modular**
+Script `utils/log_execution.sh` proporciona logging genérico reutilizable en otros subprocesos:
+- **Ubicación**: `data_ingestion/utils/log_execution.sh`
+- **Crear tabla**: `./utils/log_execution.sh [config_file] create_table`
+- **Insertar log**: `./utils/log_execution.sh [config_file] insert <execution_id> <process_name> <step> [parámetros...]`
+- **Reutilizable**: Cualquier subproceso puede usar este script para logging consistente
 
 ---
 
@@ -237,19 +246,35 @@ Además del cargador de Shapefiles, el repositorio incluye scripts SQL para oper
 dbeaver/
 ├── README.md                          # Este archivo
 └── data_ingestion/                    # Macroproyecto de ingesta de datos
-    └── postgis_dpa/                   # Subproceso DPA Ecuador
-        ├── bin/
-        │   └── load_shape.sh          # Script principal de carga
-        ├── Scripts/
-        │   ├── create_dpa_ecu.sql     # Setup DPA Ecuador
-        │   ├── postgis.sql            # Instalación PostGIS
+    ├── sql/                          # Scripts SQL genéricos
+    │   ├── create_execution_logs.sql # Creación tabla logs (genérico)
+    │   ├── create_metadata.sql       # Creación tabla metadata (genérico)
+    │   ├── create_schema.sql         # Creación esquema (genérico)
+    │   ├── vacuum_analyze.sql        # Optimización tabla (genérico)
+    │   ├── count_records.sql         # Conteo registros (genérico)
+    │   ├── test_connection.sql       # Prueba conexión BD (genérico)
+    │   ├── check_schema.sql          # Verificación esquema (genérico)
+    │   └── check_gist_index.sql      # Verificación índice GIST (genérico)
+    ├── utils/                        # Scripts genéricos reutilizables
+    │   └── log_execution.sh          # Logging modular para BD
+    └── postgis_dpa/                  # Subproceso DPA Ecuador
+        ├── sql/                      # Scripts SQL específicos DPA
+        │   ├── insert_metadata.sql   # Inserción metadata
+        │   ├── check_metadata.sql    # Verificación metadata
+        │   ├── check_execution_logs.sql # Verificación logs
+        │   ├── select_recent_logs.sql # Consulta logs recientes
+        │   ├── create_dpa_ecu.sql    # Setup DPA Ecuador
         │   └── postgis_ecuador_continental.sql # Datos continentales
-        └── fnt/                       # Datos fuente (Shapefiles)
-            ├── DST_CRC/               # Distritos y Circunscripciones
-            ├── INEC2012/              # Censo 2012
+        ├── bin/
+        │   ├── load_shape.sh         # Script principal de carga
+        │   ├── test_load.sh          # Testing parametrizable
+        │   └── config.sh             # Configuración
+        └── fnt/                      # Datos fuente (Shapefiles)
+            ├── DST_CRC/              # Distritos y Circunscripciones
+            ├── INEC2012/             # Censo 2012
             │   ├── EcdCntSmp/
             │   └── EcdCntSmpGlp/
-            └── SHP/                   # Capas nacionales
+            └── SHP/                  # Capas nacionales
 ```
 
 ---

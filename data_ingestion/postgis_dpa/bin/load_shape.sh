@@ -20,29 +20,12 @@ else
 fi
 
 # Crear tabla de logs de ejecución si no existe
-psql -U "$DB_USER" -d "$DB_NAME" -c "
-CREATE TABLE IF NOT EXISTS $EXECUTION_LOG_TABLE (
-    id SERIAL PRIMARY KEY,
-    execution_id INTEGER,
-    process_name TEXT,
-    step TEXT,
-    schema_name TEXT,
-    table_name TEXT,
-    records_count INTEGER,
-    start_time TIMESTAMP,
-    end_time TIMESTAMP,
-    status TEXT,
-    details TEXT,
-    log_time TIMESTAMP
-);
-ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS step TEXT;
-ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS schema_name TEXT;
-ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS table_name TEXT;
-ALTER TABLE $EXECUTION_LOG_TABLE ADD COLUMN IF NOT EXISTS records_count INTEGER;" 2>/dev/null || true
+psql -U "$DB_USER" -d "$DB_NAME" -f "$(dirname $(dirname $(dirname $(readlink -f $0))))/sql/create_execution_logs.sql"
 
 # Iniciar registro de ejecución
 EXECUTION_ID=$$
-psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; INSERT INTO $EXECUTION_LOG_TABLE (execution_id, process_name, step, schema_name, table_name, start_time, status, details) VALUES ($EXECUTION_ID, '$PROCESO', 'START', '$VAL_SCHEMA', '$VAL_TABLE', NOW(), 'STARTED', 'Carga de $2 en $1');"
+EXECUTION_START_TIME=$(date +%Y-%m-%d\ %H:%M:%S)
+$(dirname $(dirname $(dirname $(readlink -f $0))))/utils/log_execution.sh $(dirname $(readlink -f $0))/config.sh insert $EXECUTION_ID "$PROCESO" START "$VAL_SCHEMA" "$VAL_TABLE" "" "$EXECUTION_START_TIME" "" STARTED "Carga de $2 en $1"
 
 # Función de logging mejorado
 log() {
@@ -118,12 +101,12 @@ log "INFO" "3. Iniciando proceso de carga en: $VAL_DB"
 VAL_ETAPA=1
 # 1. Crear el esquema si no existe
 if [ $VAL_ETAPA -eq 1 ]; then
-    psql -U "$VAL_USER" -d "$VAL_DB" -c "CREATE SCHEMA IF NOT EXISTS $VAL_SCHEMA;" >>$VAL_LOG
+    psql -U "$VAL_USER" -d "$VAL_DB" -v schema_name="$VAL_SCHEMA" -f "$(dirname $(dirname $(dirname $(readlink -f $0))))/sql/create_schema.sql" >>$VAL_LOG
     VAL_ETAPA=2
 fi
 # 2. Ejecutar la carga con shp2pgsql
 if [ $VAL_ETAPA -eq 2 ]; then
-    psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; INSERT INTO $EXECUTION_LOG_TABLE (execution_id, process_name, step, schema_name, table_name, start_time, status, details) VALUES ($EXECUTION_ID, '$PROCESO', 'LOAD', '$VAL_SCHEMA', '$VAL_TABLE', NOW(), 'LOADING', 'Iniciando carga de Shapefile');" 2>/dev/null || true
+    $(dirname $(dirname $(dirname $(readlink -f $0))))/utils/log_execution.sh $(dirname $(readlink -f $0))/config.sh insert $EXECUTION_ID "$PROCESO" LOAD "$VAL_SCHEMA" "$VAL_TABLE" "" "$(date +%Y-%m-%d\ %H:%M:%S)" "" LOADING "Iniciando carga de Shapefile"
     if [ "$DROP_TABLE" = "true" ]; then
         shp2pgsql -s $3 -d -I -W "$ENCODING" "$VAL_SHP_PATH" "$VAL_NAME_TABLE" | psql -U "$VAL_USER" -d "$VAL_DB" >>$VAL_LOG
     else
@@ -133,28 +116,29 @@ if [ $VAL_ETAPA -eq 2 ]; then
 fi
 # 3. Optimizar la tabla con VACUUM ANALYZE
 if [ $VAL_ETAPA -eq 3 ]; then
-    psql -U "$VAL_USER" -d "$VAL_DB" -c "VACUUM ANALYZE $VAL_NAME_TABLE;" >>$VAL_LOG
+    psql -U "$VAL_USER" -d "$VAL_DB" -v table_name="$VAL_NAME_TABLE" -f "$(dirname $(dirname $(dirname $(readlink -f $0))))/sql/vacuum_analyze.sql" >>$VAL_LOG
     VAL_ETAPA=4
 fi
 # 4. Versionado de datos: Insertar metadata
 if [ $VAL_ETAPA -eq 4 ]; then
-    psql -U "$VAL_USER" -d "$VAL_DB" -c "CREATE TABLE IF NOT EXISTS $METADATA_TABLE (table_name TEXT, version TEXT, load_date TIMESTAMP, source_file TEXT);" >>$VAL_LOG
-    psql -U "$VAL_USER" -d "$VAL_DB" -c "SET search_path TO dpa, public; INSERT INTO $METADATA_TABLE (table_name, version, load_date, source_file) VALUES ('$VAL_NAME_TABLE', '$DATA_VERSION', NOW(), '$VAL_SHP_PATH');" >>$VAL_LOG
+    # Crear tabla de metadata si no existe
+    psql -U "$VAL_USER" -d "$VAL_DB" -f "$(dirname $(dirname $(dirname $(readlink -f $0))))/sql/create_metadata.sql" >>$VAL_LOG
+    psql -U "$VAL_USER" -d "$VAL_DB" -v table_name="$VAL_NAME_TABLE" -v data_version="$DATA_VERSION" -v shp_path="$VAL_SHP_PATH" -f "$(dirname $(dirname $(readlink -f $0)))/sql/insert_metadata.sql" >>$VAL_LOG
     VAL_ETAPA=5
 fi
 # 4. Verificación final
 if [ $VAL_ETAPA -eq 5 ]; then
     log "INFO" "Carga exitosa: $VAL_NAME_TABLE"
     # Mostrar cuántos registros se cargaron
-    VAL_CONTEO=$(psql -U "$VAL_USER" -d "$VAL_DB" -t -c "SELECT count(*) AS registrosCargados FROM $VAL_NAME_TABLE;")
+    VAL_CONTEO=$(psql -U "$VAL_USER" -d "$VAL_DB" -t -v table_name="$VAL_NAME_TABLE" -f "$(dirname $(dirname $(dirname $(readlink -f $0))))/sql/count_records.sql")
     log "INFO" "Registros insertados: $VAL_CONTEO"
     log "INFO" "Finaliza ejecucion del proceso: $PROCESO"
     # Insertar registro de finalización
-    psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; INSERT INTO $EXECUTION_LOG_TABLE (execution_id, process_name, step, schema_name, table_name, records_count, end_time, status, details) VALUES ($EXECUTION_ID, '$PROCESO', 'FINISH', '$VAL_SCHEMA', '$VAL_TABLE', $VAL_CONTEO, NOW(), 'SUCCESS', 'Carga completada');" 2>/dev/null || true
+    $(dirname $(dirname $(dirname $(readlink -f $0))))/utils/log_execution.sh $(dirname $(readlink -f $0))/config.sh insert $EXECUTION_ID "$PROCESO" FINISH "$VAL_SCHEMA" "$VAL_TABLE" $VAL_CONTEO "$EXECUTION_START_TIME" "$(date +%Y-%m-%d\ %H:%M:%S)" SUCCESS "Carga completada"
     exit 0
 else
     log "ERROR" "Hubo un fallo en la conversión o carga del SHP."
     # Insertar registro de error
-    psql -U "$DB_USER" -d "$DB_NAME" -c "SET search_path TO dpa, public; INSERT INTO $EXECUTION_LOG_TABLE (execution_id, process_name, step, schema_name, table_name, end_time, status, details) VALUES ($EXECUTION_ID, '$PROCESO', 'FAILED', '$VAL_SCHEMA', '$VAL_TABLE', NOW(), 'FAILED', 'Error en etapa $VAL_ETAPA');" 2>/dev/null || true
+    $(dirname $(dirname $(dirname $(readlink -f $0))))/utils/log_execution.sh $(dirname $(readlink -f $0))/config.sh insert $EXECUTION_ID "$PROCESO" FAILED "$VAL_SCHEMA" "$VAL_TABLE" "" "" "$(date +%Y-%m-%d\ %H:%M:%S)" FAILED "Error en etapa $VAL_ETAPA"
     exit 1
 fi
