@@ -192,7 +192,17 @@ Archivo `config.sh` centraliza parámetros como credenciales, rutas y opciones. 
 Tabla de metadata `$METADATA_TABLE` registra versiones, fechas de carga y fuentes de datos para rastreo de cambios.
 
 ### **Logging en Base de Datos**
-Tabla `$EXECUTION_LOG_TABLE` almacena detalles de ejecución, logs y estados de procesos para auditoría completa.
+Tabla `$EXECUTION_LOG_TABLE` registra cada paso del proceso de carga con campos detallados:
+- `step`: Paso del proceso (START, LOAD, FINISH)
+- `schema_name`: Esquema de destino
+- `table_name`: Tabla cargada
+- `records_count`: Número de registros insertados
+- `execution_id`: ID único de ejecución
+- `status`: Estado (STARTED, LOADING, SUCCESS, ERROR)
+- `details`: Mensajes descriptivos
+- `start_time`/`end_time`: Tiempos de ejecución
+
+Permite rastreo granular de cada etapa del proceso de carga para auditoría y debugging.
 
 ### **Pruebas Automatizadas**
 Script `test_load.sh` valida conexiones, esquemas, índices y datos cargados, asegurando integridad del proceso.
