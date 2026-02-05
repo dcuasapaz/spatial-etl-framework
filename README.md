@@ -249,11 +249,20 @@ dbeaver/
     ├── sql/                          # Scripts SQL genéricos
     │   ├── create_execution_logs.sql # Creación tabla logs (genérico)
     │   ├── create_metadata.sql       # Creación tabla metadata (genérico)
-    │   └── postgis.sql               # Instalación PostGIS (genérico)
+    │   ├── create_schema.sql         # Creación esquema (genérico)
+    │   ├── vacuum_analyze.sql        # Optimización tabla (genérico)
+    │   ├── count_records.sql         # Conteo registros (genérico)
+    │   ├── test_connection.sql       # Prueba conexión BD (genérico)
+    │   ├── check_schema.sql          # Verificación esquema (genérico)
+    │   └── check_gist_index.sql      # Verificación índice GIST (genérico)
     ├── utils/                        # Scripts genéricos reutilizables
     │   └── log_execution.sh          # Logging modular para BD
     └── postgis_dpa/                  # Subproceso DPA Ecuador
         ├── sql/                      # Scripts SQL específicos DPA
+        │   ├── insert_metadata.sql   # Inserción metadata
+        │   ├── check_metadata.sql    # Verificación metadata
+        │   ├── check_execution_logs.sql # Verificación logs
+        │   ├── select_recent_logs.sql # Consulta logs recientes
         │   ├── create_dpa_ecu.sql    # Setup DPA Ecuador
         │   └── postgis_ecuador_continental.sql # Datos continentales
         ├── bin/
