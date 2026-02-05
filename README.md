@@ -45,7 +45,7 @@ graph TD
     classDef db fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000;
 
     subgraph "📥 Fuentes de Datos"
-        A[📂 Shapefiles (.shp)]:::source
+        A["📂 Shapefiles (.shp)"]:::source
     end
 
     subgraph "⚙️ Motor de Procesamiento (ETL)"
