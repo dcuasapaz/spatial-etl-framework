@@ -10,7 +10,7 @@ PROCESO=TEST_LOAD_DPA
 # Cargar configuración
 CONFIG_FILE=$(dirname $(readlink -f $0))/config.sh
 if [ -f "$CONFIG_FILE" ]; then
-    source "$CONFIG_FILE"
+    . "$CONFIG_FILE"
 else
     echo "ERROR: Archivo de configuración no encontrado"
     exit 1

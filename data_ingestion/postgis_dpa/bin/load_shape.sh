@@ -13,7 +13,7 @@ PROCESO=DC_DPA_ECU
 # Cargar configuración externa
 CONFIG_FILE=$(dirname $(readlink -f $0))/config.sh
 if [ -f "$CONFIG_FILE" ]; then
-    source "$CONFIG_FILE"
+    . "$CONFIG_FILE"
 else
     echo "ERROR: Archivo de configuración $CONFIG_FILE no encontrado"
     exit 1
