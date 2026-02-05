@@ -29,18 +29,27 @@ sh -x load_shape.sh [Param1] [Param2] [Param3] [Param4]
 ```
 
 ### **Carga por Lotes**
-Para cargar múltiples archivos de manera automatizada, utiliza el script `batch_load.sh`. Edita la lista `CARGAS` en el script para definir las cargas deseadas.
+Para cargar automáticamente **todos los archivos Shapefile** disponibles en el directorio `fnt/`, utiliza el script `batch_load.sh`. El script detecta automáticamente todos los archivos `.shp`, determina el SRID apropiado basado en el subdirectorio (32717 para datos INEC2012/DST_CRC proyectados, 4326 para datos SHP geográficos), y genera nombres de tabla estandarizados.
 
 ```bash
 sh -x batch_load.sh
 ```
 
+**Características de la carga automática:**
+- **Detección automática:** Encuentra todos los archivos `.shp` en `fnt/` y subdirectorios.
+- **Determinación de SRID:** 32717 (UTM 17S) para datos proyectados, 4326 (WGS84) para geográficos.
+- **Nombres de tabla:** `ec_ecu_<nombre_archivo_minúsculas>`.
+- **Manejo de errores:** Registra fallos pero continúa con el siguiente archivo.
+- **Logging detallado:** Registra cada paso en logs separados por archivo y un log general del batch.
+
 ### **Pruebas Automatizadas**
 Ejecuta pruebas para validar la configuración y cargas previas:
 
 ```bash
-sh -x test_load.sh
+sh -x test_load.sh [esquema] [tabla]
 ```
+
+Ejemplo: `sh -x test_load.sh dpa ec_ecu_prv`
 
 ### **Configuración Externa**
 Los parámetros se configuran en `config.sh`. Modifica este archivo para adaptar el entorno sin cambiar el código.
@@ -48,6 +57,7 @@ Los parámetros se configuran en `config.sh`. Modifica este archivo para adaptar
 
 ## 🛠️ Definición de Parámetros
 
+### **Carga Individual (load_shape.sh)**
 El script requiere ***4 parámetros obligatorios** para su correcto funcionamiento:
 
 | Parámetro | Variable | Definición | Ejemplo |
@@ -56,6 +66,15 @@ El script requiere ***4 parámetros obligatorios** para su correcto funcionamien
 | **Param2** | ` $2 ` | **Nombre del Archivo:** Nombre del archivo fuente (sin la extensión .shp). | ` EcdCnt_Prf ` |
 | **Param3** | ` $3 ` | **SRID:** Código del Sistema de Referencia Espacial (4326 o 32717). | ` 32717 ` |
 | **Param4** | ` $4 ` | **Subdirectorio Fuente:** Nombre del subdirectorio en fnt/ donde se encuentra el archivo. | ` INEC2012/EcdCntSmpGlp ` |
+
+### **Carga Automática (batch_load.sh)**
+Los parámetros se determinan automáticamente del archivo Shapefile detectado:
+
+| Parámetro | Determinación Automática | Ejemplo |
+| :--- | :--- | :--- |
+| **Nombre de Tabla** | `ec_ecu_<nombre_archivo_minúsculas>` | `ec_ecu_crc` |
+| **SRID** | 32717 si subdirectorio contiene INEC2012/DST_CRC, 4326 si no | `32717` |
+| **Subdirectorio** | Ruta relativa desde fnt/ | `DST_CRC` o `INEC2012/EcdCntSmpGlp` |
 
 ---
 

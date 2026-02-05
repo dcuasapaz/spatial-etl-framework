@@ -50,6 +50,11 @@ if [ ! -d "$LOG_DIR" ]; then
     echo "WARN: Directorio de logs no existe: $LOG_DIR"
 fi
 
-if [ ! -d "$DATA_DIR" ]; then
-    echo "WARN: Directorio de datos no existe: $DATA_DIR"
+# Para DATA_DIR, construir la ruta completa relativa al directorio del script
+SCRIPT_DIR=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
+DATA_DIR_FULL="$SCRIPT_DIR/../$DATA_DIR"
+if [ ! -d "$DATA_DIR_FULL" ]; then
+    echo "WARN: Directorio de datos no existe: $DATA_DIR_FULL"
+else
+    DATA_DIR="$DATA_DIR_FULL"  # Actualizar DATA_DIR a ruta absoluta
 fi
