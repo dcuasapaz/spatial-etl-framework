@@ -1,0 +1,65 @@
+# 📁 ARCHIVOS MODIFICADOS - CONTROL DE CAMBIOS DPA ECUADOR
+# Versión 1.0 - Fecha: 4 de febrero de 2026
+
+## 📋 LISTADO COMPLETO DE ARCHIVOS AFECTADOS
+
+### 🔄 ARCHIVOS MODIFICADOS
+1. data_ingestion/sql/create_dpa_execution_logs.sql
+   - Cambió: DROP TABLE → CREATE TABLE IF NOT EXISTS
+   - Tabla: dpa.dpa_execution_logs
+
+2. data_ingestion/sql/create_dpa_metadata.sql
+   - Cambió: DROP TABLE → CREATE TABLE IF NOT EXISTS
+   - Tabla: dpa.dpa_metadata
+
+3. data_ingestion/bin/config.sh
+   - Variables: EXECUTION_LOG_TABLE, METADATA_TABLE
+   - Nuevos valores: dpa.dpa_execution_logs, dpa.dpa_metadata
+
+4. data_ingestion/bin/load_shape.sh
+   - Referencias SQL: create_dpa_execution_logs.sql, create_dpa_metadata.sql
+   - Llamadas a log_execution.sh corregidas
+
+5. data_ingestion/bin/test_load.sh
+   - Consultas: dpa.dpa_execution_logs, dpa.dpa_metadata
+   - Referencias a archivos SQL actualizados
+
+6. data_ingestion/bin/batch_load.sh
+   - Rutas corregidas: 3 niveles de dirname
+   - Logging batch START/FINISH agregado
+
+7. data_ingestion/sql/insert_metadata.sql
+   - Tabla: dpa.dpa_metadata
+
+8. data_ingestion/sql/check_metadata.sql
+   - Tabla: dpa.dpa_metadata
+
+9. data_ingestion/sql/select_recent_logs.sql
+   - Tabla: dpa.dpa_execution_logs
+
+10. data_ingestion/sql/check_execution_logs.sql
+    - Tabla: dpa.dpa_execution_logs
+
+11. README.md
+    - Sintaxis de carga masiva
+    - Nombres de archivos actualizados
+    - Descripción de logging mejorado
+
+### ❌ ARCHIVOS ELIMINADOS
+1. bin/create_execution_logs.sql (duplicado)
+2. bin/create_metadata.sql (duplicado)
+3. bin/h batch_load.sh (temporal)
+4. .dbeaver/*.bak (backups)
+
+### ✅ ARCHIVOS RENOMBRADOS
+1. create_execution_logs.sql → create_dpa_execution_logs.sql
+2. create_metadata.sql → create_dpa_metadata.sql
+
+### 📊 ESTADÍSTICAS
+- Archivos modificados: 12
+- Archivos eliminados: 4
+- Archivos renombrados: 2
+- Tablas renombradas: 2
+- Rutas corregidas: 2
+- Variables actualizadas: 2
+
